@@ -10,7 +10,7 @@ This repo is a Spark application and OpenShift AI demo that implements a telecom
 
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph sources [Data sources]
     DataSimulator[Data Simulator]
     MySQL[(MySQL)]
