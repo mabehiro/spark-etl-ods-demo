@@ -6,8 +6,57 @@ A comprehensive telecom analytics data pipeline built for OpenShift AI and Spark
 
 This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster (data-simulator and spark-etl user workloads). Elyra pipelines can run the notebooks in sequence; object storage (S3/MinIO) sits between extract and analytics.
 
-## Flow
+## Acknowledgments
 
+This project learned from and reused content from the following upstream repositories:
+
+- **[Spark on OpenShift](https://github.com/rh-aiservices-bu/spark-on-openshift)** – Spark on OpenShift patterns and examples.
+- **[Workbench images](https://github.com/rh-aiservices-bu/workbench-images)** – Upstream workbench/Jupyter image build and usage (see [Building an image](https://github.com/rh-aiservices-bu/workbench-images/tree/main#building-an-image)).
+
+## Quick Start
+
+### Prerequisites
+
+- OpenShift cluster with admin access
+- MinIO installed and configured
+- Spark Operator installed
+- Privileged Security Context Constraint (SCC)
+
+This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `bootstrap/` and `cluster/` directories for Argo CD / ApplicationSet manifests targeting the `spark.openshift.rhdp` cluster.
+
+### DataScience project setup
+
+1. **Set up the OpenShift AI project**  
+   Create a project named `spark-etl-project`, or apply the manifest:
+   ```bash
+   oc apply -f spark-etl-datascience-demo/spark-etl-datascience-project.yaml
+   ```
+
+2. **Apply network policy**  
+   ```bash
+   oc apply -f spark-etl-datascience-demo/spark-etl-network-policy.yaml
+   ```
+
+3. **Apply RBAC for the workbench**  
+   ```bash
+   oc apply -f spark-etl-datascience-demo/spark-rbac.yaml
+   ```
+
+4. **Prepare a workbench image with PySpark (client mode)**  
+   The notebooks run in **client mode**: the Spark driver runs inside the notebook pod, so the workbench image’s Spark/PySpark version must match the executor version.  
+   See [Working from inside a workbench](https://github.com/rh-aiservices-bu/spark-on-openshift?tab=readme-ov-file#working-from-inside-a-workbench) in the Spark on OpenShift repo.
+
+5. **Set up the pipeline server**  
+   Do this before using the workbench so you can create pipelines in the same project later.
+
+   - Create an S3 bucket named `spark-etl-pipeline` in MinIO. See `spark-etl-datascience-demo/datascience-pipeline-application.yaml` for the DataScience Pipelines application configuration.
+   - Apply RBAC so the Data Science Pipelines application can spawn Spark applications from pipelines:
+     ```bash
+     oc apply -f spark-etl-datascience-demo/elyra-pipeline/pipe-line-dspa-rbac.yaml
+     oc apply -f spark-etl-datascience-demo/elyra-pipeline/network-policy-spark-pod-to-pod.yaml
+     ```
+
+## Architecture
 
 ```mermaid
 flowchart TB
