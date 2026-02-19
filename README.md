@@ -4,7 +4,9 @@ A comprehensive telecom analytics data pipeline built for OpenShift AI and Spark
 
 ## Project Overview
 
-This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster (data-simulator and spark-etl user workloads). Elyra pipelines can run the notebooks in sequence; object storage (S3/MinIO) sits between extract and analytics.
+This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster (data-simulator and spark-etl user workloads). 
+
+Elyra pipelines can run the notebooks in sequence; object storage (S3/MinIO) sits between extract and analytics.
 
 ## Acknowledgments
 
@@ -55,6 +57,18 @@ This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `b
      oc apply -f spark-etl-datascience-demo/elyra-pipeline/pipe-line-dspa-rbac.yaml
      oc apply -f spark-etl-datascience-demo/elyra-pipeline/network-policy-spark-pod-to-pod.yaml
      ```
+
+## Use cases
+
+### Use case 1: Run Spark notebook ETL
+
+1. **Create a workbench** using the workbench image you prepared earlier (with PySpark for client mode). Name the workbench **`spark-etl`** so it matches the service account and RBAC defined in `spark-rbac.yaml`.
+
+2. **Upload the notebooks** from `spark-etl-datascience-demo/notebooks/` into JupyterLab (e.g. drag-and-drop or Upload in the file browser).
+
+3. **Run and experiment** with the notebooks (e.g. `etl_extract_mysql_to_s3_raw.ipynb`, then `cdr_analytics_report.ipynb`) in order. Ensure MySQL and MinIO are reachable and credentials are set as required by the notebooks.
+
+   ![CDR analytics in JupyterLab](imgs/Pasted%20Graphic%204.png)
 
 ## Architecture
 
