@@ -11,11 +11,24 @@ This repo is a Spark application and OpenShift AI demo that implements a telecom
 
 ```mermaid
 flowchart LR
-  DataSimulator[Data Simulator] -->|seeds| MySQL[(MySQL)]
-  MySQL -->|read| ExtractNb[etl_extract_mysql_to_s3_raw]
-  ExtractNb -->|write| S3Parquet[S3 Parquet]
-  S3Parquet -->|read| AnalyticsNb[cdr_analytics_report]
-  AnalyticsNb -->|report + CSV| S3CSV[S3 CSV]
+  subgraph sources [Data sources]
+    DataSimulator[Data Simulator]
+    MySQL[(MySQL)]
+  end
+  subgraph storage [Object storage]
+    S3Parquet[S3 Parquet]
+    S3CSV[S3 CSV]
+  end
+  subgraph notebooks [Jupyter notebooks]
+    ExtractNb[etl_extract_mysql_to_s3_raw]
+    AnalyticsNb[Spark ETL cdr_analytics_report]
+  end
+
+  DataSimulator -->|seeds| MySQL
+  MySQL -->|read| ExtractNb
+  ExtractNb -->|write| S3Parquet
+  S3Parquet -->|read| AnalyticsNb
+  AnalyticsNb -->|report + CSV| S3CSV
 ```
 
 ## High-level flow
