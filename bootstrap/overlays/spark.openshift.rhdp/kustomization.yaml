@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - spark-etl-project.yaml
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: ApplicationSet
+      name: cluster-operators
+      namespace: openshift-gitops
+    path: patches/applicationset-path.yaml
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: ApplicationSet
+      name: user-workloads
+      namespace: openshift-gitops
+    path: patches/user-workloads-applicationset-path.yaml

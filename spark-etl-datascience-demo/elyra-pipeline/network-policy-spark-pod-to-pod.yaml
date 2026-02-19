@@ -1,0 +1,14 @@
+# Allow all pod-to-pod TCP traffic within the namespace so Spark driver and
+# executors can communicate (driver ports 2222/7777 + executor block/shuffle ports).
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: spark-pipeline-allow-pod-to-pod
+  namespace: spark-etl-project
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - podSelector: {}
+  policyTypes:
+    - Ingress

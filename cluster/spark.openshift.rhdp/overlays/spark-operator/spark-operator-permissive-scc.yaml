@@ -1,0 +1,59 @@
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: spark-operator-permissive-scc
+  annotations:
+    description: "Permissive SCC for Spark Operator to work with restrictive cluster policies"
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: false
+allowedCapabilities: null
+defaultAddCapabilities: null
+# Very permissive fsGroup settings
+fsGroup:
+  type: RunAsAny
+groups: []
+priority: null
+readOnlyRootFilesystem: false
+requiredDropCapabilities: null
+# Very permissive runAsUser settings
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+# Allow any seccomp profile
+seccompProfiles:
+- '*'
+users:
+  - system:serviceaccount:spark-operator:spark-operator-helm-webhook
+  - system:serviceaccount:spark-operator:spark-operator-helm-controller
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret
+- hostPath
+- nfs
+- iscsi
+- glusterfs
+- rbd
+- flexVolume
+- cinder
+- cephfs
+- fc
+- flocker
+- quobyte
+- azureDisk
+- azureFile
+- vsphereVolume
+- photonPersistentDisk
+- scaleIO
+- storageos
+- awsElasticBlockStore
+- gcePersistentDisk

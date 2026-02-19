@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-operators
+  namespace: openshift-gitops
+spec:
+  generators:
+    - git:
+        repoURL: git@github.com:mabehiro/applicationset-gitops.git
+        revision: HEAD
+        files:
+          - path: cluster/spark.openshift.rhdp/overlays/*/enabled

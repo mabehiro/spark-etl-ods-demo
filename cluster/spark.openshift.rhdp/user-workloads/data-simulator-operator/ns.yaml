@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-simulator
+  labels:
+    name: data-simulator
+    app.kubernetes.io/name: data-simulator
+    app.kubernetes.io/part-of: openshift-ai-datacisense
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: kustomize
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    description: "Data Simulator - OpenShift AI Telecom Analytics Data Pipeline"
+    contact: "DataCISense Team"
+    version: "1.0.0"

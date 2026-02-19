@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-operators
+  namespace: openshift-gitops
+spec:
+  # Allow toggling auto-sync in the GUI without ApplicationSet overwriting it
+  ignoreApplicationDifferences:
+    - jsonPointers:
+        - /spec/syncPolicy
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        # This repo (applicationset-gitops). Reuse the same Git secret if same GitHub user.
+        repoURL: git@github.com:mabehiro/applicationset-gitops.git
+        revision: HEAD
+        files:
+          # Only overlay dirs that contain an "enabled" file get an Application
+          - path: cluster/*/overlays/*/enabled
+  template:
+    metadata:
+      # Include cluster name so same overlay in different clusters doesn't collide
+      name: '{{ replace "." "-" (index .path.segments 1) }}-{{ .path.basenameNormalized }}'
+      namespace: openshift-gitops
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{ if or (contains "-config" .path.basename) (contains "-configuration" .path.basename) }}2{{ else }}1{{ end }}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: cluster-operators
+      source:
+        repoURL: git@github.com:mabehiro/applicationset-gitops.git
+        targetRevision: HEAD
+        path: '{{ .path.path }}'
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true

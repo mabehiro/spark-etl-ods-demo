@@ -1,0 +1,161 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datasimulator-config
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: datasimulator
+    app.kubernetes.io/part-of: data-simulator
+data:
+  config.yaml: |
+    # Telecom CDR Data Simulator (reference; image uses /app/config.yaml)
+    database:
+      host: "mysql-service"
+      port: 3306
+      user: "root"
+      password: "password"
+      database: "telecom_data"
+      charset: "utf8mb4"
+    simulator:
+      customers_seed_count: 1000
+      cdr_records_per_cycle: 30
+      interval_seconds: 60
+      batch_size: 100
+      log_level: "INFO"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datasimulator-secret
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: datasimulator
+    app.kubernetes.io/part-of: data-simulator
+type: Opaque
+data:
+  DB_USER: cm9vdA==  # root
+  DB_PASSWORD: cGFzc3dvcmQ=  # password
+  DB_NAME: dGVsZWNvbV9kYXRh  # telecom_data
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datasimulator-sa
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: datasimulator
+    app.kubernetes.io/part-of: data-simulator
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datasimulator
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: datasimulator
+    app.kubernetes.io/part-of: data-simulator
+    app.kubernetes.io/component: data-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: datasimulator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: datasimulator
+        app.kubernetes.io/part-of: data-simulator
+        app.kubernetes.io/component: data-generator
+    spec:
+      serviceAccountName: datasimulator-sa
+      containers:
+      - name: datasimulator
+        image: quay.io/motohiroabe/telcomcdr-simulator:latest
+        imagePullPolicy: Always
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: datasimulator-secret
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: datasimulator-secret
+              key: DB_PASSWORD
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: datasimulator-secret
+              key: DB_NAME
+        - name: BATCH_SIZE
+          value: "100"
+        - name: INTERVAL_SECONDS
+          value: "60"
+        - name: CUSTOMERS_SEED_COUNT
+          value: "1000"
+        - name: CDR_RECORDS_PER_CYCLE
+          value: "30"
+        - name: CONFIG_PATH
+          value: "/app/config.yaml"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import pymysql; pymysql.connect(host='mysql-service', port=3306, user='root', password='password', database='telecom_data'); print('OK')"
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import pymysql; pymysql.connect(host='mysql-service', port=3306, user='root', password='password', database='telecom_data'); print('OK')"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datasimulator-service
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: datasimulator
+    app.kubernetes.io/part-of: data-simulator
+spec:
+  selector:
+    app.kubernetes.io/name: datasimulator
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP

@@ -1,0 +1,31 @@
+# Argo CD Application that deploys Spark operator via Helm (child of this overlay).
+# Sync order: namespace + SCC are applied first; this App then deploys the chart.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spark-operator-helm
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: https://kubeflow.github.io/spark-operator
+    chart: spark-operator
+    targetRevision: "2.4.0"
+    helm:
+      parameters:
+        - name: sparkJobNamespace
+          value: ""
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spark-operator
+  # ServerSideApply=true: Spark operator Helm chart includes large CRDs (OpenAPI schemas).
+  # Client-side apply would store merged state in metadata.annotations, exceeding the 262144-byte
+  # limit and causing SyncFailed. Server-side apply avoids that by doing the merge on the API server.
+  # CreateNamespace=false: namespace is created by the parent overlay (spark-operator).
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

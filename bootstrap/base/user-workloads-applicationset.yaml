@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: user-workloads
+  namespace: openshift-gitops
+spec:
+  ignoreApplicationDifferences:
+    - jsonPointers:
+        - /spec/syncPolicy
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: git@github.com:mabehiro/applicationset-gitops.git
+        revision: HEAD
+        files:
+          - path: cluster/*/user-workloads/*/enabled
+  template:
+    metadata:
+      name: '{{ replace "." "-" (index .path.segments 1) }}-{{ .path.basenameNormalized }}'
+      namespace: openshift-gitops
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: '{{ .path.basenameNormalized }}'
+      source:
+        repoURL: git@github.com:mabehiro/applicationset-gitops.git
+        targetRevision: HEAD
+        path: '{{ .path.path }}'
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - SkipDryRunOnMissingResource=true

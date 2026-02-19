@@ -1,0 +1,91 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudbeaver
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: cloudbeaver
+    app.kubernetes.io/part-of: data-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbeaver
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloudbeaver
+        app.kubernetes.io/part-of: data-simulator
+    spec:
+      containers:
+      - name: cloudbeaver
+        image: dbeaver/cloudbeaver:latest
+        ports:
+        - containerPort: 8978
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8978
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8978
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbeaver-service
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: cloudbeaver
+    app.kubernetes.io/part-of: data-simulator
+spec:
+  selector:
+    app.kubernetes.io/name: cloudbeaver
+  ports:
+  - name: http
+    port: 8978
+    targetPort: 8978
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: cloudbeaver
+  namespace: data-simulator
+  labels:
+    app.kubernetes.io/name: cloudbeaver
+    app.kubernetes.io/part-of: data-simulator
+spec:
+  to:
+    kind: Service
+    name: cloudbeaver-service
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

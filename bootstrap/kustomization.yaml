@@ -1,0 +1,5 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Default: virc-testing overlay. Apply with:
+#   kubectl apply -k bootstrap/overlays/virc-testing.sno1.cotton.blue
+resources: []
