@@ -60,7 +60,7 @@ This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `b
 
 ## Use cases
 
-### Use case 1: Run Spark notebook ETL
+### Use case 1: Run Spark ETL from Jupyter notebook
 
 1. **Create a workbench** using the workbench image you prepared earlier (with PySpark for client mode). Name the workbench **`spark-etl`** so it matches the service account and RBAC defined in `spark-rbac.yaml`.
 
@@ -70,6 +70,34 @@ This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `b
 
    ![CDR analytics in JupyterLab](imgs/Pasted%20Graphic%204.png)
 
+### Use case 2: Run Spark ETL with Elyra pipeline
+
+1. **Create a new workbench** – Select **Jupyter | Data Science | CPU | Python 3.x** and name it **`spark-etl-pipeline`**.
+
+   ![Workbench for pipeline](imgs/spark-pipeline-workbench.png)
+
+2. **Upload notebooks** from the `spark-etl-datascience-demo/notebooks/` folder. Open `cdr_analytics_report.ipynb` and set the Spark Kubernetes image so the **driver version matches the executor version**. Example for experimental images built with Spark 4.0.1:
+   ```python
+   sparkConf.set("spark.kubernetes.container.image", "quay.io/motohiroabe/pyspark-odh:s4.0.1-h3.4.1_v0.0.1")
+   ```
+
+3. **Open the Pipeline Editor (Elyra)** – Add both notebooks to the canvas and connect them in sequence (etl_etract_mysql_to_s3 → cdr_analystics_report_analytics).
+
+4. **Add a Runtime image** – In Elyra, open **Runtime image** settings and add a new image, e.g.:
+   - `quay.io/motohiroabe/workbench-images:jupyter-spark-c9s-py311_2023c_20230910`  
+   More options: [Runtime images](https://github.com/rh-aiservices-bu/workbench-images/tree/main?tab=readme-ov-file#runtime-images) in the workbench-images upstream repo.
+
+   ![Runtime image](imgs/Edt-spark-ructime-new.png)
+
+5. **Select this runtime image** for the Spark ETL notebook node in the pipeline, then **run the pipeline**.
+
+ ![Runtime image](imgs/sparktel-runtimeimage.png)
+
+6. **Results** – Reports and outputs are written to MinIO (e.g. Parquet and CSV under the configured bucket/paths).
+
+ ![Pipeline image](imgs/pipeline-view.png)
+
+ ![Minio image](imgs/minio3-reports.png)
 ## Architecture
 
 ```mermaid
