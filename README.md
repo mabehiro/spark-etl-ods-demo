@@ -1,4 +1,4 @@
-# Spark ETL & Telecom CDR Demo
+# Running Apache Spark on OpenShift: A Hands-On Guide from Notebooks to Spark Operator
 
 A comprehensive telecom analytics data pipeline built for OpenShift AI and Spark Operator, implementing a complete data simulation and processing system.
 
