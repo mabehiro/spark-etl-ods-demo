@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-history-config
+  namespace: spark-history-server
+  labels:
+    app: spark-history-server
+    component: spark
+data:
+  spark-defaults.conf: |
+    # History Server Configuration
+    spark.history.fs.logDirectory=s3a://spark-history-server/logs-dir/
+    spark.history.ui.port=18080
+    spark.history.retainedApplications=50
+    spark.history.ui.maxApplications=100
+    
+    # S3 Configuration for spark-history-server bucket
+    spark.hadoop.fs.s3a.bucket.spark-history-server.path.style.access=true
+    spark.hadoop.fs.s3a.bucket.spark-history-server.connection.ssl.enabled=false
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    
+    # Event Log Configuration (for reference)
+    spark.eventLog.enabled=true
+    spark.eventLog.dir=s3a://spark-history-server/logs-dir/

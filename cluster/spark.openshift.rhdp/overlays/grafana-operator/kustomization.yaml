@@ -5,8 +5,4 @@ commonAnnotations:
   argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 
 resources:
-  - ns.yaml
-  - spark-operator-permissive-scc.yaml
-  - spark-operator-helm-app.yaml
-  - spark-operator-metrics_svc.yaml
-  - spark-operator-servicemonitor.yaml
+  - subscription.yaml

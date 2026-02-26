@@ -6,7 +6,8 @@ commonAnnotations:
 
 resources:
   - ns.yaml
-  - spark-operator-permissive-scc.yaml
-  - spark-operator-helm-app.yaml
-  - spark-operator-metrics_svc.yaml
-  - spark-operator-servicemonitor.yaml
+  - grafana-sa.yaml
+  - grafana.yaml
+  - grafana-cluster-role-bindings.yaml
+  # - thanos-bearer-token-secret.yaml
+  - grafana-datasource.yaml

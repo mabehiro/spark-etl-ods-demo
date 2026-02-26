@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: spark-application-podmonitor
+  namespace: spark-etl-project
+  labels:
+    release: user-workload
+spec:
+  namespaceSelector:
+    matchNames:
+      - spark-etl-project
+  selector:
+    matchExpressions:
+      - key: sparkoperator.k8s.io/launched-by-spark-operator
+        operator: Exists
+  podMetricsEndpoints:
+    - port: tcp-prometheus
+      path: /metrics
+      interval: 5s
+      scheme: http

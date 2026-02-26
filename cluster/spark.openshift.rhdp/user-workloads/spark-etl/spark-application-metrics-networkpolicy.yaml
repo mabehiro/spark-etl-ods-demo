@@ -1,0 +1,21 @@
+# Allow Prometheus (user-workload) in openshift-user-workload-monitoring to scrape
+# metrics from Spark driver and executor pods on the metrics port.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: spark-etl-project
+spec:
+  podSelector:
+    matchLabels:
+      sparkoperator.k8s.io/launched-by-spark-operator: "true"
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-user-workload-monitoring
+      ports:
+        - protocol: TCP
+          port: 8090

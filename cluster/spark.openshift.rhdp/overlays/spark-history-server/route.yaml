@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: spark-history-server
+  namespace: spark-history-server
+  labels:
+    app: spark-history-server
+    component: spark
+spec:
+  to:
+    kind: Service
+    name: spark-history-server
+    weight: 100
+  port:
+    targetPort: http
+  wildcardPolicy: None

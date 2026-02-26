@@ -1,0 +1,9 @@
+# Kubernetes ServiceAccount for the Grafana deployment.
+# Referenced by grafana-cluster-role-bindings.yaml (cluster-reader, cluster-monitoring-view).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana
+  namespace: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
