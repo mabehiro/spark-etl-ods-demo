@@ -14,7 +14,7 @@ This repo supports two parts of the blog:
 
 - **Part 1** — Spark ETL from JupyterNotebook (client mode): `spark-etl-datascience-demo/`
 
-  [Linke to Demo, Part1](https://youtu.be/IOCRQ0LC0qQ)<img width="1918" height="768" alt="image" src="https://github.com/user-attachments/assets/129f72db-8c6a-4fd8-8840-aea70aaaa60a" />
+  [Linke to Demo, Part1](https://www.youtube.com/watch?v=0R0L4NtTEKs)<img width="1918" height="768" alt="image" src="https://github.com/user-attachments/assets/129f72db-8c6a-4fd8-8840-aea70aaaa60a" />
 
 - **Part 2** — Production-ready Spark with Operator: `spark-etl-operator-demo/`
 
