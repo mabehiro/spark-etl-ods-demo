@@ -4,9 +4,16 @@ A comprehensive telecom analytics data pipeline built for OpenShift AI and Spark
 
 ## Project Overview
 
-This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster (data-simulator and spark-etl user workloads). 
+This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster (data-simulator and spark-etl user workloads).
 
 Elyra pipelines can run the notebooks in sequence; object storage (S3/MinIO) sits between extract and analytics.
+
+For workloads that require **scaling and resource management**, the pipeline can also be submitted as a **SparkApplication** using the Spark Operator. See the `spark-etl-operator-demo/` directory.
+
+This repo supports two parts of the blog:
+
+- **Part 1** — Spark ETL from JupyterNotebook (client mode): `spark-etl-datascience-demo/`
+- **Part 2** — Production-ready Spark with Operator: `spark-etl-operator-demo/`
 
 ## Acknowledgments
 
@@ -98,6 +105,25 @@ This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `b
  ![Pipeline image](imgs/pipeline-view.png)
 
  ![Minio image](imgs/minio3-reports.png)
+
+### Use case 3: Run Spark ETL as SparkApplication (Operator)
+
+This use case submits the same Telecom CDR pipeline as **SparkApplication** CRDs managed by the Spark Operator. Python job files are mounted from a ConfigMap — no image rebuild needed for transformation changes.
+
+1. Navigate to the `spark-etl-operator-demo/` directory.
+2. Follow the steps in the [Operator demo runbook](spark-etl-operator-demo/docs/runbook.md).
+
+> **Note:** This section is the companion to Part 2 of the blog.
+
+### Use case 4 (Optional): Monitor Spark Jobs with Grafana
+
+Once your SparkApplication is running, you can monitor job performance and resource usage using Grafana.
+
+- Spark metrics are exposed via the Spark metrics endpoint
+- Grafana dashboards show executor resource usage, job duration, and task metrics in real time
+
+See the `spark-etl-operator-demo/docs/runbook.md` for Grafana setup instructions.
+
 ## Architecture
 
 ```mermaid
