@@ -13,13 +13,19 @@ For workloads that require **scaling and resource management**, the pipeline can
 This repo supports two parts of the blog:
 
 - **Part 1** — Spark ETL from JupyterNotebook (client mode): `spark-etl-datascience-demo/`
+
+  [Linke to Demo, Part1](https://www.youtube.com/watch?v=IOCRQ0LC0qQ)<img width="1918" height="768" alt="image" src="https://github.com/user-attachments/assets/129f72db-8c6a-4fd8-8840-aea70aaaa60a" />
+
 - **Part 2** — Production-ready Spark with Operator: `spark-etl-operator-demo/`
+
+  [Linke to Demo, Part2](https://www.youtube.com/watch?v=G4mg0e11l3Q)<img width="1924" height="995" alt="image" src="https://github.com/user-attachments/assets/da8308c6-7332-4ef9-9a19-c8349322d259" />
+
 
 ## Acknowledgments
 
 This project learned from and reused content from the following upstream repositories:
 
-- **[Spark on OpenShift](https://github.com/rh-aiservices-bu/spark-on-openshift)** – Spark on OpenShift patterns and examples.
+- **[Spark on OpenShift](https://github.com/rh-aiservices-bu/spark-on-openshift)** – Spark on OpenShift patterns and examples. 
 - **[Workbench images](https://github.com/rh-aiservices-bu/workbench-images)** – Upstream workbench/Jupyter image build and usage (see [Building an image](https://github.com/rh-aiservices-bu/workbench-images/tree/main#building-an-image)).
 
 ## Quick Start
