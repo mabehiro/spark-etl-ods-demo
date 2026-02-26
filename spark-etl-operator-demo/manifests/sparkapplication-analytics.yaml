@@ -1,0 +1,68 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: cdr-analytics-job
+  namespace: spark-etl-project
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  sparkVersion: "3.3.0"
+  sparkConf:
+    "spark.metrics.conf.*.source.jvm.class": "org.apache.spark.metrics.source.JvmSource"
+    "spark.metrics.appStatusSource.enabled": "true"
+  image: quay.io/opendatahub-contrib/pyspark:s3.3.0-h3.3.3_latest
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///opt/spark/jobs/analytics_spark_job.py
+  restartPolicy:
+    type: Never
+  driver:
+    cores: 1
+    memory: 2g
+    serviceAccount: spark-etl-operator
+    labels:
+      app.kubernetes.io/name: cdr-analytics-job
+      app.kubernetes.io/component: analytics
+    env:
+      - name: S3_BUCKET
+        value: telecom-cdr-data
+      - name: S3_ENDPOINT
+        value: http://minio-service.minio.svc.cluster.local:9000
+      - name: S3_ACCESS_KEY
+        value: minio
+      - name: S3_SECRET_KEY
+        value: minio123
+      - name: CDR_PREFIX
+        value: cdr-data
+      - name: CDR_REPORT_PREFIX
+        value: cdr-report-csv
+      - name: SINGLE_FILE_OUTPUT
+        value: "true"
+      - name: PYTHONPATH
+        value: /opt/spark/jobs
+    volumeMounts:
+      - name: spark-job-scripts
+        mountPath: /opt/spark/jobs
+  executor:
+    instances: 2
+    cores: 1
+    memory: 2g
+    labels:
+      app.kubernetes.io/name: cdr-analytics-job
+      app.kubernetes.io/component: analytics
+    env:
+      - name: PYTHONPATH
+        value: /opt/spark/jobs
+    volumeMounts:
+      - name: spark-job-scripts
+        mountPath: /opt/spark/jobs
+  monitoring:
+    exposeDriverMetrics: true
+    exposeExecutorMetrics: true
+    prometheus:
+      jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
+      portName: 'tcp-prometheus'
+  volumes:
+    - name: spark-job-scripts
+      configMap:
+        name: spark-etl-operator-scripts
