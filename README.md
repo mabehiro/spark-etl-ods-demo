@@ -4,15 +4,15 @@ A comprehensive telecom analytics data pipeline built for OpenShift AI and Spark
 
 ## Project Overview
 
-This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster (data-simulator and spark-etl user workloads).
+This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster.
 
-Elyra pipelines can run the notebooks in sequence; object storage (S3/MinIO) sits between extract and analytics.
+Notebooks connect to **Jupyter Enterprise Gateway**, which submits Spark jobs as `SparkApplication` CRs to the Spark Operator — running in cluster mode on OpenShift. Object storage (S3/MinIO) sits between extract and analytics steps.
 
-For workloads that require **scaling and resource management**, the pipeline can also be submitted as a **SparkApplication** using the Spark Operator. See the `spark-etl-operator-demo/` directory.
+For workloads that require **scaling and resource management**, the pipeline can also be submitted directly as a **SparkApplication** using the Spark Operator. See the `spark-etl-operator-demo/` directory.
 
 This repo supports two parts of the blog:
 
-- **Part 1** — Spark ETL from JupyterNotebook (client mode): `spark-etl-datascience-demo/`
+- **Part 1** — Spark ETL from JupyterNotebook with Jupyter Enterprise Gateway:
 
   [Linke to Demo, Part1](https://www.youtube.com/watch?v=0R0L4NtTEKs)<img width="1918" height="768" alt="image" src="https://github.com/user-attachments/assets/129f72db-8c6a-4fd8-8840-aea70aaaa60a" />
 
@@ -39,6 +39,12 @@ This project learned from and reused content from the following upstream reposit
 
 This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `bootstrap/` and `cluster/` directories for Argo CD / ApplicationSet manifests targeting the `spark.openshift.rhdp` cluster.
 
+### Jupyter Enterprise Gateway Setup
+
+*[Coming soon — setup instructions and manifests will be added here.]*
+
+For reference, see the [Kubeflow Spark Operator — Integration with Kubeflow Notebooks](https://www.kubeflow.org/docs/components/spark-operator/user-guide/notebooks-spark-operator/).
+
 ### DataScience project setup
 
 1. **Set up the OpenShift AI project**  
@@ -57,62 +63,28 @@ This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `b
    oc apply -f spark-etl-datascience-demo/spark-rbac.yaml
    ```
 
-4. **Prepare a workbench image with PySpark (client mode)**  
-   The notebooks run in **client mode**: the Spark driver runs inside the notebook pod, so the workbench image’s Spark/PySpark version must match the executor version.  
-   See [Working from inside a workbench](https://github.com/rh-aiservices-bu/spark-on-openshift?tab=readme-ov-file#working-from-inside-a-workbench) in the Spark on OpenShift repo.
+4. **Prepare a workbench image with PySpark**
+   The notebooks connect to Jupyter Enterprise Gateway to submit Spark jobs in cluster mode. The workbench image needs PySpark installed for writing and testing notebook code locally before submission.
+   See [Workbench images](https://github.com/rh-aiservices-bu/workbench-images) for available images.
 
-5. **Set up the pipeline server**  
-   Do this before using the workbench so you can create pipelines in the same project later.
-
-   - Create an S3 bucket named `spark-etl-pipeline` in MinIO. See `spark-etl-datascience-demo/datascience-pipeline-application.yaml` for the DataScience Pipelines application configuration.
-   - Apply RBAC so the Data Science Pipelines application can spawn Spark applications from pipelines:
-     ```bash
-     oc apply -f spark-etl-datascience-demo/elyra-pipeline/pipe-line-dspa-rbac.yaml
-     oc apply -f spark-etl-datascience-demo/elyra-pipeline/network-policy-spark-pod-to-pod.yaml
-     ```
 
 ## Use cases
 
 ### Use case 1: Run Spark ETL from Jupyter notebook
 
-1. **Create a workbench** using the workbench image you prepared earlier (with PySpark for client mode). Name the workbench **`spark-etl`** so it matches the service account and RBAC defined in `spark-rbac.yaml`.
+1. **Set up Jupyter Enterprise Gateway** — follow the setup instructions in the [Jupyter Enterprise Gateway Setup](#jupyter-enterprise-gateway-setup) section above.
 
-2. **Upload the notebooks** from `spark-etl-datascience-demo/notebooks/` into JupyterLab (e.g. drag-and-drop or Upload in the file browser).
+2. **Create a workbench** using the workbench image you prepared earlier (with PySpark for client mode). Name the workbench **`spark-etl`** so it matches the service account and RBAC defined in `spark-rbac.yaml`.
 
-3. **Run and experiment** with the notebooks (e.g. `etl_extract_mysql_to_s3_raw.ipynb`, then `cdr_analytics_report.ipynb`) in order. Ensure MySQL and MinIO are reachable and credentials are set as required by the notebooks.
+4. TODO: ADD PATCH Command, this routes execution through Jupyter Enterprise Gateway to the Spark Operator.
+
+4. **Upload the notebooks** from `spark-etl-datascience-demo/notebooks/` into JupyterLab (e.g. drag-and-drop or Upload in the file browser).
+
+5. **Run the notebooks** in order — `etl_extract_mysql_to_s3_raw.ipynb`, then `cdr_analytics_report.ipynb`. Ensure MySQL and MinIO are reachable and credentials are configured.
 
    ![CDR analytics in JupyterLab](imgs/Pasted%20Graphic%204.png)
 
-### Use case 2: Run Spark ETL with Elyra pipeline
-
-1. **Create a new workbench** – Select **Jupyter | Data Science | CPU | Python 3.x** and name it **`spark-etl-pipeline`**.
-
-   ![Workbench for pipeline](imgs/spark-pipeline-workbench.png)
-
-2. **Upload notebooks** from the `spark-etl-datascience-demo/notebooks/` folder. Open `cdr_analytics_report.ipynb` and set the Spark Kubernetes image so the **driver version matches the executor version**. Example for experimental images built with Spark 4.0.1:
-   ```python
-   sparkConf.set("spark.kubernetes.container.image", "quay.io/motohiroabe/pyspark-odh:s4.0.1-h3.4.1_v0.0.1")
-   ```
-
-3. **Open the Pipeline Editor (Elyra)** – Add both notebooks to the canvas and connect them in sequence (etl_etract_mysql_to_s3 → cdr_analystics_report_analytics).
-
-4. **Add a Runtime image** – In Elyra, open **Runtime image** settings and add a new image, e.g.:
-   - `quay.io/motohiroabe/workbench-images:jupyter-spark-c9s-py311_2023c_20230910`  
-   More options: [Runtime images](https://github.com/rh-aiservices-bu/workbench-images/tree/main?tab=readme-ov-file#runtime-images) in the workbench-images upstream repo.
-
-   ![Runtime image](imgs/Edt-spark-ructime-new.png)
-
-5. **Select this runtime image** for the Spark ETL notebook node in the pipeline, then **run the pipeline**.
-
- ![Runtime image](imgs/sparktel-runtimeimage.png)
-
-6. **Results** – Reports and outputs are written to MinIO (e.g. Parquet and CSV under the configured bucket/paths).
-
- ![Pipeline image](imgs/pipeline-view.png)
-
- ![Minio image](imgs/minio3-reports.png)
-
-### Use case 3: Run Spark ETL as SparkApplication (Operator)
+### Use case 2: Run Spark ETL as SparkApplication (Operator)
 
 This use case submits the same Telecom CDR pipeline as **SparkApplication** CRDs managed by the Spark Operator. Python job files are mounted from a ConfigMap — no image rebuild needed for transformation changes.
 
@@ -121,7 +93,7 @@ This use case submits the same Telecom CDR pipeline as **SparkApplication** CRDs
 
 > **Note:** This section is the companion to Part 2 of the blog.
 
-### Use case 4 (Optional): Monitor Spark Jobs with Grafana
+### Use case 3 (Optional): Monitor Spark Jobs with Grafana
 
 Once your SparkApplication is running, you can monitor job performance and resource usage using Grafana.
 
