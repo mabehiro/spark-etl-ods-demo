@@ -6,6 +6,8 @@
 - Namespace `spark-etl-project` exists.
 - MySQL dataset available (same schema as existing demo).
 - MinIO/S3 endpoint reachable from Spark pods.
+- Supported kernel/runtime image only:
+  - `quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1`
 
 ## 2) Install resources
 
@@ -76,12 +78,23 @@ No Docker image build is needed for these script changes.
 - Use SparkApplication status (`.status.driverInfo.podName`) to resolve the driver pod name.
 
 ETL fails with `ClassNotFoundException: com.mysql.cj.jdbc.Driver`:
-- Ensure `spark-etl-operator-demo/manifests/sparkapplication-etl.yaml` has `spec.deps.jars` with MySQL connector URL.
-- Re-apply and rerun ETL:
+- This demo uses baked JDBC in the kernel image, not `spec.deps.jars`.
+- Verify ETL/analytics image is:
+  - `quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1`
+- Re-apply and rerun:
   ```bash
   oc apply -k spark-etl-operator-demo
   oc delete sparkapplication cdr-etl-job -n spark-etl-project --ignore-not-found
   oc apply -n spark-etl-project -f spark-etl-operator-demo/manifests/sparkapplication-etl.yaml
+  ```
+
+Notebook/Eg kernel shows `CWD: /opt/spark-3.2.1-bin-hadoop2.7/work-dir`:
+- You are attached to a legacy kernel SparkApplication.
+- Restart notebook kernel and select `Spark Operator (Python)`.
+- Optionally clean active legacy default kernels:
+  ```bash
+  oc get sparkapplication -n spark-etl-project | grep '^default-'
+  oc delete sparkapplication default-<KERNEL_ID> -n spark-etl-project
   ```
 
 Analytics enters `FAILING` quickly:
