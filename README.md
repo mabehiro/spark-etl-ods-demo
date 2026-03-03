@@ -4,7 +4,7 @@ A comprehensive telecom analytics data pipeline built for OpenShift AI and Spark
 
 ## Project Overview
 
-This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). Workloads are deployed via GitOps to the `spark.openshift.rhdp` cluster.
+This repo is a Spark application and OpenShift AI demo that implements a telecom CDR analytics pipeline. A **data simulator** generates realistic customer and call data into **MySQL**; **Spark notebooks** on OpenShift AI (Jupyter) run the ETL (MySQL → S3 Parquet) and analytics (Parquet → report and CSV). 
 
 Notebooks connect to **Jupyter Enterprise Gateway**, which submits Spark jobs as `SparkApplication` CRs to the Spark Operator — running in cluster mode on OpenShift. Object storage (S3/MinIO) sits between extract and analytics steps.
 
@@ -41,9 +41,59 @@ This repo includes a **GitOps bootstrap** to cover the cluster setup; see the `b
 
 ### Jupyter Enterprise Gateway Setup
 
-*[Coming soon — setup instructions and manifests will be added here.]*
+Based on [Kubeflow: Integration with Kubeflow Notebooks](https://www.kubeflow.org/docs/components/spark-operator/user-guide/notebooks-spark-operator/).
 
-For reference, see the [Kubeflow Spark Operator — Integration with Kubeflow Notebooks](https://www.kubeflow.org/docs/components/spark-operator/user-guide/notebooks-spark-operator/).
+#### Deploy
+
+First, create a PVC to store the custom kernel template used to submit SparkApplications. We updated `sparkoperator.k8s.io-v1beta2.yaml.j2` to enable the Prometheus exporter for monitoring.
+
+```bash
+# 1. Create PVC
+oc apply -f cluster/spark.openshift.rhdp/user-workloads/enterprise-gateway/pvc.yaml
+
+# 2. Install Helm release
+helm upgrade --install enterprise-gateway \
+  https://github.com/jupyter-server/enterprise_gateway/releases/download/v3.2.3/jupyter_enterprise_gateway_helm-3.2.3.tar.gz \
+  --namespace spark-etl-project \
+  --values cluster/spark.openshift.rhdp/user-workloads/enterprise-gateway/value.yaml \
+  --wait
+
+# 3. Apply RBAC — grant anyuid SCC to enterprise-gateway-sa on OpenShift
+oc apply -f cluster/spark.openshift.rhdp/user-workloads/enterprise-gateway/enterprise-gateway-openshift-rbac.yaml
+
+# 4. Restart deployment so the pod picks up the new privileges
+kubectl rollout restart deployment/enterprise-gateway -n spark-etl-project
+```
+
+Once the pod is running, copy the kernel spec into the gateway pod:
+
+```bash
+EG_POD=$(kubectl get pods -n spark-etl-project -l app=enterprise-gateway -o jsonpath='{.items[0].metadata.name}')
+oc cp spark_python_operator spark-etl-project/$EG_POD:/usr/local/share/jupyter/kernels/
+```
+
+#### Connect a Notebook
+
+> **Note:** Complete the [DataScience Project Setup](#datascience-project-setup) and create the `spark-etl` workbench first before running the command below.
+
+Patch the Notebook CR to connect it to the Enterprise Gateway:
+
+```bash
+oc patch notebook spark-etl \
+  -n spark-etl-project \
+  --type='json' \
+  -p='[
+    {
+      "op": "add",
+      "path": "/spec/template/spec/containers/0/env",
+      "value": [
+        { "name": "JUPYTER_GATEWAY_URL", "value": "http://enterprise-gateway.spark-etl-project.svc.cluster.local:8888" },
+        { "name": "JUPYTER_GATEWAY_REQUEST_TIMEOUT", "value": "120" },
+        { "name": "KERNEL_SERVICE_ACCOUNT_NAME", "value": "enterprise-gateway-sa" }
+      ]
+    }
+  ]'
+```
 
 ### DataScience project setup
 

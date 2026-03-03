@@ -1,0 +1,33 @@
+# OpenShift: grant privileged SCC to enterprise-gateway-sa (run as any user, writable PVC, etc.).
+# Ref: Declarative SCC via RBAC (OpenShift 4.3+)
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: use-privileged-scc
+  namespace: spark-etl-project
+  annotations:
+    description: "Allows using the cluster's privileged SCC"
+rules:
+  - apiGroups:
+      - security.openshift.io
+    resourceNames:
+      - privileged
+    resources:
+      - securitycontextconstraints
+    verbs:
+      - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: enterprise-gateway-sa-use-privileged
+  namespace: spark-etl-project
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: use-privileged-scc
+subjects:
+  - kind: ServiceAccount
+    name: enterprise-gateway-sa
+    namespace: spark-etl-project

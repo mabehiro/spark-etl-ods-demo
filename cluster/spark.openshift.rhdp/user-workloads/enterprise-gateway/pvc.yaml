@@ -1,0 +1,14 @@
+# PVC for Enterprise Gateway kernelspecs (pvc-kernelspecs). Provisioned by cluster default StorageClass.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-kernelspecs
+  namespace: spark-etl-project
+  labels:
+    app: enterprise-gateway
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

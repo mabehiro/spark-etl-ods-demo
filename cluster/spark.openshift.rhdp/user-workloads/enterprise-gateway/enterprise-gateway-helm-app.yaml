@@ -1,0 +1,28 @@
+# Argo CD Application that deploys Jupyter Enterprise Gateway via Helm (child of this user-workload).
+# Chart is embedded under chart/; values in values.yaml. Sync order: namespace, PVC, and RBAC
+# are applied first; this App then deploys the chart.
+# Run-as-root: upstream chart does not render securityContext. After sync, if the gateway pod
+# cannot write to pvc-kernelspecs, apply the run-as-root patch and restart. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: enterprise-gateway-helm
+  namespace: openshift-gitops
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:mabehiro/applicationset-gitops.git
+    targetRevision: HEAD
+    path: cluster/spark.openshift.rhdp/user-workloads/enterprise-gateway/chart
+    helm:
+      valueFiles:
+        - ../values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spark-etl-project
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
