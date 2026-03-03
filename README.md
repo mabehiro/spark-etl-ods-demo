@@ -123,13 +123,9 @@ oc patch notebook spark-etl \
 ### Use case 1: Run Spark ETL from Jupyter notebook
 
 1. **Set up Jupyter Enterprise Gateway** — follow the setup instructions in the [Jupyter Enterprise Gateway Setup](#jupyter-enterprise-gateway-setup) section above.
-
-2. **Create a workbench** using the workbench image you prepared earlier (with PySpark for client mode). Name the workbench **`spark-etl`** so it matches the service account and RBAC defined in `spark-rbac.yaml`.
-
-4. TODO: ADD PATCH Command, this routes execution through Jupyter Enterprise Gateway to the Spark Operator.
-
+2. **Create a workbench** in OpenShift AI. Name the workbench **`spark-etl`** so it matches the service account and RBAC defined in `spark-rbac.yaml`.
+3. **Connect the workbench to Enterprise Gateway** — follow the [Connect a Notebook](#connect-a-notebook) step in the Jupyter Enterprise Gateway Setup section. This routes execution through Jupyter Enterprise Gateway to the Spark Operator.
 4. **Upload the notebooks** from `spark-etl-datascience-demo/notebooks/` into JupyterLab (e.g. drag-and-drop or Upload in the file browser).
-
 5. **Run the notebooks** in order — `etl_extract_mysql_to_s3_raw.ipynb`, then `cdr_analytics_report.ipynb`. Ensure MySQL and MinIO are reachable and credentials are configured.
 
    ![CDR analytics in JupyterLab](imgs/Pasted%20Graphic%204.png)
