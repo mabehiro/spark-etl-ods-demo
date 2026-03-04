@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
 from typing import Dict
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, date_format, lit
+from py4j.protocol import Py4JJavaError
 
 from config import EtlConfig
 
@@ -22,17 +24,92 @@ CDR_COLUMNS = [
     "created_at",
 ]
 
+_MYSQL_DRIVER_READY = False
+
+
+def _register_mysql_driver_from_jar(spark: SparkSession, driver_class: str, jar_path: str) -> bool:
+    if not os.path.exists(jar_path):
+        return False
+
+    jvm = spark.sparkContext._jvm
+    gateway = spark.sparkContext._gateway
+    url_arr = gateway.new_array(jvm.java.net.URL, 1)
+    url_arr[0] = jvm.java.io.File(jar_path).toURI().toURL()
+    parent = jvm.java.lang.Thread.currentThread().getContextClassLoader()
+    loader = jvm.java.net.URLClassLoader(url_arr, parent)
+    driver_cls = jvm.java.lang.Class.forName(driver_class, True, loader)
+    driver_obj = driver_cls.getDeclaredConstructor().newInstance()
+    wrapper = jvm.org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper(driver_obj)
+    jvm.java.sql.DriverManager.registerDriver(wrapper)
+    return True
+
+
+def _ensure_mysql_driver_ready(spark: SparkSession, cfg: EtlConfig) -> None:
+    global _MYSQL_DRIVER_READY
+    if _MYSQL_DRIVER_READY:
+        return
+
+    jvm = spark.sparkContext._jvm
+    driver_candidates = [cfg.mysql_jdbc_driver]
+    if cfg.mysql_jdbc_driver == "com.mysql.cj.jdbc.Driver":
+        driver_candidates.append("com.mysql.jdbc.Driver")
+
+    for driver_name in driver_candidates:
+        try:
+            jvm.java.lang.Class.forName(driver_name)
+            _MYSQL_DRIVER_READY = True
+            return
+        except Exception:
+            pass
+
+    jar_candidates = [
+        "/tmp/.ivy2/jars/com.mysql_mysql-connector-j-8.0.33.jar",
+        "/tmp/.ivy2/jars/mysql_mysql-connector-java-8.0.33.jar",
+    ]
+    jar_env = os.getenv("SPARK_JARS", "").strip()
+    if jar_env:
+        for value in jar_env.split(","):
+            item = value.strip()
+            if item.startswith("file:"):
+                item = item[5:]
+            if item and item not in jar_candidates:
+                jar_candidates.append(item)
+
+    for driver_name in driver_candidates:
+        for jar_path in jar_candidates:
+            try:
+                if _register_mysql_driver_from_jar(spark, driver_name, jar_path):
+                    _MYSQL_DRIVER_READY = True
+                    return
+            except Exception:
+                continue
+
 
 def _jdbc_read(spark: SparkSession, cfg: EtlConfig, dbtable: str):
-    return (
+    _ensure_mysql_driver_ready(spark, cfg)
+
+    reader = (
         spark.read.format("jdbc")
         .option("url", cfg.jdbc_url)
-        .option("driver", cfg.mysql_jdbc_driver)
         .option("user", cfg.mysql_user)
         .option("password", cfg.mysql_password)
         .option("dbtable", dbtable)
-        .load()
     )
+
+    driver_candidates = [cfg.mysql_jdbc_driver]
+    if cfg.mysql_jdbc_driver == "com.mysql.cj.jdbc.Driver":
+        driver_candidates.append("com.mysql.jdbc.Driver")
+
+    for driver_name in driver_candidates:
+        try:
+            return reader.option("driver", driver_name).load()
+        except Py4JJavaError as exc:
+            if "ClassNotFoundException" in str(exc) and driver_name in str(exc):
+                continue
+            raise
+
+    # Final fallback: rely on JDBC service discovery from jars if explicit driver registration fails.
+    return reader.load()
 
 
 def _safe_cast(df, name: str, target_type: str):

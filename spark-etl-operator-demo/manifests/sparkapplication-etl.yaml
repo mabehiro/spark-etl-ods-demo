@@ -10,15 +10,12 @@ spec:
     "spark.metrics.conf.*.source.jvm.class": "org.apache.spark.metrics.source.JvmSource"
     "spark.metrics.appStatusSource.enabled": "true"
   mode: cluster
-  sparkVersion: "3.3.0"
-  image: quay.io/opendatahub-contrib/pyspark:s3.3.0-h3.3.3_latest
-  imagePullPolicy: IfNotPresent
+  sparkVersion: "3.3.1"
+  image: quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1
+  imagePullPolicy: Always
   mainApplicationFile: local:///opt/spark/jobs/etl_spark_job.py
   restartPolicy:
     type: Never
-  deps:
-    jars:
-      - https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar
   driver:
     cores: 1
     memory: 2g
@@ -58,6 +55,8 @@ spec:
       - name: PYTHONPATH
         value: /opt/spark/jobs
     volumeMounts:
+      - name: prometheus-jmx-jar
+        mountPath: /prometheus
       - name: spark-job-scripts
         mountPath: /opt/spark/jobs
   executor:
@@ -71,6 +70,8 @@ spec:
       - name: PYTHONPATH
         value: /opt/spark/jobs
     volumeMounts:
+      - name: prometheus-jmx-jar
+        mountPath: /prometheus
       - name: spark-job-scripts
         mountPath: /opt/spark/jobs
   monitoring:
@@ -80,6 +81,9 @@ spec:
       jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.17.0.jar"
       portName: 'tcp-prometheus'
   volumes:
+    - name: prometheus-jmx-jar
+      configMap:
+        name: spark-jmx-exporter-jar
     - name: spark-job-scripts
       configMap:
         name: spark-etl-operator-scripts

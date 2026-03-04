@@ -8,6 +8,15 @@ Key changes:
 - No Docker build is required for script changes.
 - A lightweight Jupyter notebook wrapper is included for local/test iteration.
 
+## Supported runtime (single path)
+
+This demo now supports only one kernel/runtime combination:
+- Kernel image: `quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1`
+- Spark: `3.3.1`
+- Hadoop: `3.3.4`
+
+Legacy Spark 3.2 / Hadoop 2.7 kernels are intentionally not supported.
+
 ## Folder layout
 
 - `src/`: reusable Python logic and Spark job entrypoints.
@@ -97,7 +106,7 @@ You can modify defaults in the SparkApplication manifests using environment vari
 - Paths: `CDR_PREFIX`, `CUSTOMER_PREFIX`, `CDR_REPORT_PREFIX`
 
 For production, replace inline credentials with `Secret` references.
-The ETL SparkApplication pulls MySQL JDBC from Maven via `deps.jars`; this avoids rebuilding images for JDBC updates.
+MySQL JDBC is baked into the Spark kernel image used by the manifests.
 
 ## Troubleshooting
 
@@ -106,8 +115,21 @@ The ETL SparkApplication pulls MySQL JDBC from Maven via `deps.jars`; this avoid
 - Use the `status.driverInfo.podName` command shown above instead of pod label selection.
 
 `ClassNotFoundException: com.mysql.cj.jdbc.Driver` in ETL:
-- Verify ETL manifest includes `spec.deps.jars` for MySQL connector JAR.
-- Re-apply manifests and rerun the ETL SparkApplication.
+- Ensure SparkApplication image is `quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1`.
+- Recreate the SparkApplication (or restart notebook kernel for EG), then rerun ETL.
+
+Notebook cell shows unexpected kernel runtime/path:
+- You are on an unsupported kernel pod/image.
+- Restart notebook kernel and select `Spark Operator (Python)` so EG launches the supported image.
+- Verify active EG kernel SparkApplication image:
+  ```bash
+  oc get sparkapplication default-<KERNEL_ID> -n spark-etl-project -o jsonpath='{.spec.image}{"\n"}'
+  ```
+  Expected: `quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1`
+
+Driver fails with `Error opening zip file or JAR manifest missing : /prometheus/jmx_prometheus_javaagent-0.17.0.jar`:
+- Ensure ConfigMap `spark-jmx-exporter-jar` exists in `spark-etl-project`.
+- Re-apply manifests from this folder; ETL/analytics now mount that ConfigMap at `/prometheus`.
 
 Analytics fails quickly after `RUNNING`:
 - This can happen if `cdr-data/` has no parquet files yet.
@@ -120,3 +142,12 @@ Use `spark-etl-operator-demo/notebooks/operator_wrapper_test.ipynb` to call:
 - `run_analytics(...)`
 
 This keeps the code path consistent with SparkApplication jobs while still allowing notebook-based testing during development.
+
+Notebook wrapper is operator-kernel only: run it with Enterprise Gateway kernel `Spark Operator (Python)` so `/opt/spark/jobs` is mounted from ConfigMap.
+
+## Enterprise Gateway
+
+If notebooks are executed through Jupyter Enterprise Gateway, see:
+- `spark-etl-operator-demo/docs/enterprise-gateway-plan.md`
+
+This plan covers kernelspec requirements, ConfigMap mounting of wrapper scripts, and validation steps for EG-based notebook execution.
