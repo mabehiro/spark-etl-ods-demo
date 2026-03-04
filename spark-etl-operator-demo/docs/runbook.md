@@ -71,6 +71,8 @@ oc logs -n spark-etl-project "$ANALYTICS_DRIVER_POD" --all-containers=true --tai
 
 No Docker image build is needed for these script changes.
 
+Notebook wrapper testing is supported only via Enterprise Gateway kernel `Spark Operator (Python)` with scripts mounted at `/opt/spark/jobs`.
+
 ## 7) Troubleshooting
 
 `oc logs` returns `POD or TYPE/NAME is a required argument`:
@@ -88,8 +90,8 @@ ETL fails with `ClassNotFoundException: com.mysql.cj.jdbc.Driver`:
   oc apply -n spark-etl-project -f spark-etl-operator-demo/manifests/sparkapplication-etl.yaml
   ```
 
-Notebook/Eg kernel shows `CWD: /opt/spark-3.2.1-bin-hadoop2.7/work-dir`:
-- You are attached to a legacy kernel SparkApplication.
+Notebook/EG kernel shows unexpected runtime/path:
+- You are attached to an unsupported kernel SparkApplication.
 - Restart notebook kernel and select `Spark Operator (Python)`.
 - Optionally clean active legacy default kernels:
   ```bash

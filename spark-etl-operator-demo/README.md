@@ -118,8 +118,8 @@ MySQL JDBC is baked into the Spark kernel image used by the manifests.
 - Ensure SparkApplication image is `quay.io/rh-ee-mxavier/kernel-spark-py:3.3.1-h3.3.4-eg1`.
 - Recreate the SparkApplication (or restart notebook kernel for EG), then rerun ETL.
 
-Notebook cell shows `CWD: /opt/spark-3.2.1-bin-hadoop2.7/work-dir`:
-- You are on a legacy kernel pod.
+Notebook cell shows unexpected kernel runtime/path:
+- You are on an unsupported kernel pod/image.
 - Restart notebook kernel and select `Spark Operator (Python)` so EG launches the supported image.
 - Verify active EG kernel SparkApplication image:
   ```bash
@@ -142,6 +142,8 @@ Use `spark-etl-operator-demo/notebooks/operator_wrapper_test.ipynb` to call:
 - `run_analytics(...)`
 
 This keeps the code path consistent with SparkApplication jobs while still allowing notebook-based testing during development.
+
+Notebook wrapper is operator-kernel only: run it with Enterprise Gateway kernel `Spark Operator (Python)` so `/opt/spark/jobs` is mounted from ConfigMap.
 
 ## Enterprise Gateway
 
