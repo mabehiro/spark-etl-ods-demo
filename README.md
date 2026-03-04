@@ -14,7 +14,7 @@ This repo supports two parts of the blog:
 
 - **Part 1** — Spark ETL from JupyterNotebook with Jupyter Enterprise Gateway:
 
-  [Linke to Demo, Part1](https://www.youtube.com/watch?v=0R0L4NtTEKs)<img width="1918" height="768" alt="image" src="https://github.com/user-attachments/assets/129f72db-8c6a-4fd8-8840-aea70aaaa60a" />
+  [Linke to Demo, Part1](https://www.youtube.com/watch?v=kANMkLn8dKI)<img width="1918" height="768" alt="image" src="https://github.com/user-attachments/assets/129f72db-8c6a-4fd8-8840-aea70aaaa60a" />
 
 - **Part 2** — Production-ready Spark with Operator: `spark-etl-operator-demo/`
 
@@ -27,6 +27,7 @@ This project learned from and reused content from the following upstream reposit
 
 - **[Spark on OpenShift](https://github.com/rh-aiservices-bu/spark-on-openshift)** – Spark on OpenShift patterns and examples. 
 - **[Workbench images](https://github.com/rh-aiservices-bu/workbench-images)** – Upstream workbench/Jupyter image build and usage (see [Building an image](https://github.com/rh-aiservices-bu/workbench-images/tree/main#building-an-image)).
+- **[Integration with Kubeflow Notebooks](https://www.kubeflow.org/docs/components/spark-operator/user-guide/notebooks-spark-operator/)** – Integrating Kubeflow Notebooks with the Spark Operator
 
 ## Quick Start
 
